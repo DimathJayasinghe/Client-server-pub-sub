@@ -1,5 +1,29 @@
 import socket
 import sys
+import threading
+
+def handle_client(conn, address):
+    print("[NEW CONNECTION]: {}".format(address))
+    try:
+        while True:
+            data = conn.recv(1024).decode('utf-8')
+            if not data:
+                break
+
+            print("Received from {}: {}".format(address, data))
+
+            if data.strip().lower() == 'terminate':
+                print("Termination command received from {}. Closing connection.".format(address))
+                break
+
+    except Exception as e:
+        print("An error occurred with {}: {}".format(address, e))
+    finally:
+        conn.close()
+        print("[DISCONNECTED]: {}".format(address))
+
+
+
 
 def start_server():
     # check port
@@ -11,33 +35,15 @@ def start_server():
     host = '0.0.0.0'
 
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    try:
-        server_socket.bind((host, port))
-        server_socket.listen(1)   # only 1 connection at a time
-        print("Server listening on port {}".format(port))
-        
-
+    server_socket.bind((host, port))
+    server_socket.listen(5)
+    print("Server listening on port {}".format(port))
+    while True:
         conn, address = server_socket.accept()
-        print("Connection from: {}".format(address))
+        client_thread = threading.Thread(target=handle_client, args=(conn, address))
+        client_thread.start()
 
-        while True:
-            data = conn.recv(1024).decode('utf-8')
-            if not data:
-                break
-
-            print("Received from client: {}".format(data))
-
-            if data.strip().lower() == 'terminate':
-                print("Termination command received. Closing connection.")
-                break
-
-        conn.close()
-        
-    except Exception as e:
-        print("An error occurred: {}".format(e))
-    finally:
-        server_socket.close()
+        print("Active connections: {}".format(threading.active_count() - 1))        
 
 if __name__ == "__main__":
     start_server()
