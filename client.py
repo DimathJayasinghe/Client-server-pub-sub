@@ -1,13 +1,14 @@
 import socket
 import sys
 def start_client():
-    if len(sys.argv) != 4:
-        print("Usage: python client.py <server_ip> <port> <PUBLISHER/SUBSCRIBER>")
+    if len(sys.argv) != 5:
+        print("Usage: python client.py <server_ip> <port> <PUBLISHER/SUBSCRIBER> <TOPIC>")
         sys.exit(1)
 
     server_ip = sys.argv[1]
     port = int(sys.argv[2])
     role = sys.argv[3].strip().lower()
+    topic = sys.argv[4].strip()
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -15,11 +16,11 @@ def start_client():
         client_socket.connect((server_ip, port))
         print("Connected to server at {}:{}".format(server_ip, port))
         
-        # Send role to server
-        client_socket.send(role.upper().encode('utf-8'))
+        # Send role and topic to server
+        client_socket.send("{} {}".format(role.upper(), topic).encode('utf-8'))
 
         if role == 'publisher':
-            print("You are registered as a PUBLISHER.")
+            print("You are registered as a PUBLISHER for topic: {}.".format(topic))
             print("Type your message (type 'terminate' to exit):")
             while True:
                 message = input("You :> ")
@@ -29,7 +30,7 @@ def start_client():
                     break
         
         elif role == 'subscriber':
-            print("You are registered as a SUBSCRIBER.")
+            print("You are registered as a SUBSCRIBER for topic: {}.".format(topic))
             print("Waiting for messages...")
             while True:
                 data = client_socket.recv(1024).decode('utf-8')
