@@ -1,0 +1,54 @@
+import socket
+import sys
+def start_client():
+    if len(sys.argv) != 5:
+        print("Usage: python client.py <server_ip> <port> <PUBLISHER/SUBSCRIBER> <TOPIC>")
+        sys.exit(1)
+
+    server_ip = sys.argv[1]
+    port = int(sys.argv[2])
+    role = sys.argv[3].strip().lower()
+    topic = sys.argv[4].strip()
+
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    try:
+        client_socket.connect((server_ip, port))
+        print("Connected to server at {}:{}".format(server_ip, port))
+        
+        # Send role and topic to server
+        client_socket.send("{} {}".format(role.upper(), topic).encode('utf-8'))
+
+        if role == 'publisher':
+            print("You are registered as a PUBLISHER for topic: {}.".format(topic))
+            print("Type your message (type 'terminate' to exit):")
+            while True:
+                message = input("You :> ")
+                client_socket.send(message.encode('utf-8'))
+                if message.strip().lower() == "terminate":
+                    print("Termination command sent. Closing connection.")
+                    break
+        
+        elif role == 'subscriber':
+            print("You are registered as a SUBSCRIBER for topic: {}.".format(topic))
+            print("Waiting for messages...")
+            while True:
+                data = client_socket.recv(1024).decode('utf-8')
+                if not data:
+                    print("\nConnection closed by server.")
+                    break
+                print("\n[MESSAGE RECV]: {}".format(data))
+        
+        else:
+            print("Invalid role. Please restart and choose 'publisher' or 'subscriber'.")
+
+    except ConnectionRefusedError:
+        print("Could not connect to server at {}:{}".format(server_ip, port))
+    except Exception as e:
+        print("An error occurred: {}".format(e))
+    finally:
+        client_socket.close()
+
+if __name__ == "__main__":
+    start_client()
+            
